@@ -27,9 +27,24 @@ def create_task():
 
 @tasks_bp.get("")
 def get_all_tasks():
+    # tasks = Task.query.all()  # Get all tasks from the database
+    # tasks_response = [task.to_dict() for task in tasks]  # Convert each task to a dictionary
+    # return tasks_response, 200
+    
+    sort_order = request.args.get("sort")  # Get the sort parameter from the query string
     tasks = Task.query.all()  # Get all tasks from the database
-    tasks_response = [task.to_dict() for task in tasks]  # Convert each task to a dictionary
-    return tasks_response, 200
+
+    # Sort tasks based on the sort_order
+    if sort_order == "asc":
+        tasks.sort(key=lambda task: task.title)
+    elif sort_order == "desc":
+        tasks.sort(key=lambda task: task.title, reverse=True)
+
+    # Convert each task to a dictionary
+    tasks_response = [task.to_dict() for task in tasks]
+    
+    return make_response(tasks_response, 200)
+
 
     
 
