@@ -1,6 +1,7 @@
 from flask import Blueprint, request, abort, make_response, Response
 from ..db import db
 from app.models.task import Task
+from datetime import datetime
 
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
@@ -35,7 +36,7 @@ def get_all_tasks():
     tasks = Task.query.all()  # Get all tasks from the database
 
     # Sort tasks based on the sort_order
-    if sort_order == "asc":
+    if sort_order == "asc":  
         tasks.sort(key=lambda task: task.title)
     elif sort_order == "desc":
         tasks.sort(key=lambda task: task.title, reverse=True)
@@ -76,6 +77,52 @@ def delete_task(task_id):
     db.session.commit()
 
     return make_response({"details": f'Task {task.id} "{task.title}" successfully deleted'}, 200)
+
+@tasks_bp.patch("/<task_id>/mark_complete")
+def mark_complete(task_id):
+    # Retrieve the task by ID
+    task = Task.query.get(task_id)
+    
+    # If the task is not found, return a 404 error
+    if task is None:
+        abort(404, description="Task not found")
+    
+    # Update task to mark it as complete
+    task.completed_at = datetime.utcnow()  # set to current date and time
+    db.session.commit()
+    
+    # Prepare the response data as a dictionary
+    response_data = {
+        "task": {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "is_complete": task.completed_at is not None
+        }
+    }
+    
+    # Return the response data with a 200 status code
+    return response_data, 200
+
+@tasks_bp.patch("/<task_id>/mark_incomplete")
+def mark_incomplete(task_id):
+    task = Task.query.get(task_id)
+    if task is None:
+        abort(404)
+
+    task.completed_at = None
+    db.session.commit()
+
+    response_data = {
+        "task": {
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "is_complete": False
+        }
+    }
+
+    return response_data, 200
 
 def validate_task(task_id):
     try:
