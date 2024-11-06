@@ -1,7 +1,12 @@
 from flask import Blueprint, request, abort, make_response, Response
+import requests
+import os
 from ..db import db
 from app.models.task import Task
-from datetime import datetime
+from datetime import datetime, timezone
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
@@ -88,8 +93,25 @@ def mark_complete(task_id):
         abort(404, description="Task not found")
     
     # Update task to mark it as complete
-    task.completed_at = datetime.utcnow()  # set to current date and time
+    task.completed_at = datetime.now(timezone.utc)  # set to current UTC time
     db.session.commit()
+
+    # Send notification to Slack
+    slack_message = {
+        "channel": "task-notifications",
+        "text": f"Someone just completed the task: {task.title}"
+    }
+
+    slack_url = "https://slack.com/api/chat.postMessage"
+    slack_headers = {
+        "Authorization": f"Bearer {os.environ.get('SLACKBOT_TOKEN')}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(slack_url, json=slack_message, headers=slack_headers)
+
+    if response.status_code != 200:
+        print(f"Error sending message to Slack: {response.text}")
     
     # Prepare the response data as a dictionary
     response_data = {
@@ -101,7 +123,7 @@ def mark_complete(task_id):
         }
     }
     
-    # Return the response data with a 200 status code
+    # Return the dictionary directly with a 200 status code
     return response_data, 200
 
 @tasks_bp.patch("/<task_id>/mark_incomplete")
