@@ -1,5 +1,6 @@
 from flask import Blueprint, request, abort, make_response
 from app.models.goal import Goal
+from app.models.task import Task
 from ..db import db
 
 
@@ -63,7 +64,45 @@ def delete_goal(goal_id):
     db.session.delete(goal)
     db.session.commit()
 
-    return {"details": f"Goal {goal.id} \"{goal.title}\" successfully deleted"}, 200
+    return {"details": f"Goal {goal.id} \"{goal.title}\" successfully deleted"}, 200 
+
+@bp.post("/<goal_id>/tasks")
+def create_task_with_goal_id(goal_id):
+    goal = Goal.query.get(goal_id)
+    if not goal:
+        abort(404, description="Goal not found")
+
+    task_ids = request.get_json().get("task_ids", [])
+    tasks = Task.query.filter(Task.id.in_(task_ids)).all()
+
+    for task in tasks:
+        task.goal_id = goal.id
+    
+    db.session.commit()
+
+    return {
+        "id": goal.id,
+        "task_ids": task_ids
+    }, 200
+
+    
+@bp.get("/<goal_id>/tasks")
+def get_tasks_for_goals(goal_id):
+    # Retrieve the goal by ID
+    goal = Goal.query.get(goal_id)
+    if not goal:
+        return {"error": "Goal not found"}, 404
+
+    # Use to_dict to return tasks associated with the goal
+    tasks_data = [task.to_dict() for task in goal.tasks]
+
+    return {
+        "id": goal.id,
+        "title": goal.title,
+        "tasks": tasks_data
+    }, 200
+
+    
 
 
 
