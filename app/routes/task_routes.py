@@ -19,12 +19,8 @@ def create_task():
     if "title" not in request_body or "description" not in request_body:
         return make_response({"details": "Invalid data"}, 400)
 
-    # Create a new task instance
-    new_task = Task(
-        title=request_body["title"],
-        description=request_body["description"],
-        completed_at=request_body.get("completed_at")
-    )
+    new_task = Task.from_dict(request_body)
+
     db.session.add(new_task)
     db.session.commit()
 
@@ -33,9 +29,6 @@ def create_task():
 
 @bp.get("")
 def get_all_tasks():
-    # tasks = Task.query.all()  # Get all tasks from the database
-    # tasks_response = [task.to_dict() for task in tasks]  # Convert each task to a dictionary
-    # return tasks_response, 200
     
     sort_order = request.args.get("sort")  # Get the sort parameter from the query string
     tasks = Task.query.all()  # Get all tasks from the database
@@ -86,7 +79,7 @@ def delete_task(task_id):
 @bp.patch("/<task_id>/mark_complete")
 def mark_complete(task_id):
     # Retrieve the task by ID
-    task = Task.query.get(task_id)
+    task = validate_task(task_id)
     
     # If the task is not found, return a 404 error
     if task is None:
@@ -112,39 +105,30 @@ def mark_complete(task_id):
 
     if response.status_code != 200:
         print(f"Error sending message to Slack: {response.text}")
-    
-    # Prepare the response data as a dictionary
-    response_data = {
-        "task": {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": task.completed_at is not None
-        }
-    }
-    
-    # Return the dictionary directly with a 200 status code
-    return response_data, 200
+
+    return {"task": task.to_dict()}, 200
 
 @bp.patch("/<task_id>/mark_incomplete")
 def mark_incomplete(task_id):
-    task = Task.query.get(task_id)
-    if task is None:
-        abort(404)
+    # Use validate_task to handle 404 if the task does not exist
+    task = validate_task(task_id)
 
     task.completed_at = None
     db.session.commit()
 
-    response_data = {
-        "task": {
-            "id": task.id,
-            "title": task.title,
-            "description": task.description,
-            "is_complete": False
-        }
-    }
+    return {"task": task.to_dict()}, 200
 
-    return response_data, 200
+
+    # response_data = {
+    #     "task": {
+    #         "id": task.id,
+    #         "title": task.title,
+    #         "description": task.description,
+    #         "is_complete": False
+    #     }
+    # }
+
+    # return response_data, 200
 
 def validate_task(task_id):
     try:

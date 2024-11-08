@@ -37,7 +37,7 @@ def get_all_goals():
 
 @bp.get("/<goal_id>")
 def get_one_goal(goal_id):
-    goal = Goal.query.get(goal_id)
+    goal = db.session.get(Goal, goal_id)
     if not goal:
         return {"message": "Goal not found"}, 404
 
@@ -45,7 +45,7 @@ def get_one_goal(goal_id):
 
 @bp.put("/<goal_id>")
 def update_goal(goal_id):
-    goal = Goal.query.get(goal_id)
+    goal = db.session.get(Goal, goal_id)
     if not goal:
         return {"message": "Goal not found"}, 404
 
@@ -53,11 +53,12 @@ def update_goal(goal_id):
     goal.title = request_data.get("title", goal.title)
     db.session.commit()
 
-    return {"goal": {"id": goal.id, "title": goal.title}}, 200
+    # return {"goal": {"id": goal.id, "title": goal.title}}, 200
+    return {"goal": goal.to_dict()}, 200
 
 @bp.delete("/<goal_id>")
 def delete_goal(goal_id):
-    goal = Goal.query.get(goal_id)
+    goal = db.session.get(Goal, goal_id)
     if not goal:
         return {"message": "Goal not found"}, 404
 
@@ -68,7 +69,7 @@ def delete_goal(goal_id):
 
 @bp.post("/<goal_id>/tasks")
 def create_task_with_goal_id(goal_id):
-    goal = Goal.query.get(goal_id)
+    goal = db.session.get(Goal, goal_id)
     if not goal:
         abort(404, description="Goal not found")
 
@@ -89,7 +90,7 @@ def create_task_with_goal_id(goal_id):
 @bp.get("/<goal_id>/tasks")
 def get_tasks_for_goals(goal_id):
     # Retrieve the goal by ID
-    goal = Goal.query.get(goal_id)
+    goal = db.session.get(Goal, goal_id)
     if not goal:
         return {"error": "Goal not found"}, 404
 
