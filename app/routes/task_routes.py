@@ -118,18 +118,6 @@ def mark_incomplete(task_id):
 
     return {"task": task.to_dict()}, 200
 
-
-    # response_data = {
-    #     "task": {
-    #         "id": task.id,
-    #         "title": task.title,
-    #         "description": task.description,
-    #         "is_complete": False
-    #     }
-    # }
-
-    # return response_data, 200
-
 def validate_task(task_id):
     try:
         task_id = int(task_id)
