@@ -60,7 +60,7 @@ class Task(db.Model):
     @classmethod
     def from_dict(cls, task_data):
         is_complete = task_data.get("is_complete", False)
-        completed_at = datetime.utcnow() if is_complete else None
+        completed_at = datetime.now() if is_complete else None
 
         new_task = cls(
             title=task_data["title"],
